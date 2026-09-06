@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Мини-реактор</title>
+<style>
+    * { box-sizing: border-box; }
+
+    body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Arial, sans-serif;
+        color: white;
+        background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.7)),
+            url("https://images.unsplash.com/photo-1500534623283-312aade485b7") center/cover fixed;
+        display: flex;
+        justify-content: center;
+        padding: 30px;
+    }
+
+    .container {
+        width: 100%;
+        max-width: 600px;
+        padding: 30px;
+        border-radius: 20px;
+        background: rgba(255,255,255,0.1);
+        backdrop-filter: blur(12px);
+    }
+
+    a.back-link {
+        color: #aad4ff;
+        text-decoration: none;
+        font-size: 14px;
+    }
+
+    h1 { text-align: center; margin-top: 10px; }
+
+    .resources {
+        display: flex;
+        justify-content: space-around;
+        margin: 25px 0;
+        text-align: center;
+    }
+
+    .resource-box {
+        background: rgba(255,255,255,0.12);
+        padding: 15px 20px;
+        border-radius: 14px;
+        min-width: 90px;
+    }
+
+    .resource-box .value {
+        font-size: 20px;
+        font-weight: bold;
+        margin-top: 5px;
+    }
+
+    .level-info {
+        text-align: center;
+        margin-bottom: 20px;
+        font-size: 15px;
+        color: #ddd;
+    }
+
+    .section {
+        background: rgba(255,255,255,0.08);
+        border-radius: 14px;
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+
+    .section h3 { margin-top: 0; }
+
+    button {
+        padding: 10px 16px;
+        margin: 5px 4px 0 0;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 14px;
+        background: rgba(255,255,255,0.85);
+        transition: 0.2s;
+    }
+
+    button:hover { transform: scale(1.05); }
+
+    button:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    #message {
+        text-align: center;
+        min-height: 20px;
+        font-weight: bold;
+        color: #ffe58a;
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <a href="index.html" class="back-link">← Назад в портфолио</a>
+    <h1>⚛️ Мини-реактор</h1>
+
+    <div class="resources">
+        <div class="resource-box">
+            ⚡ Энергия
+            <div class="value" id="energyValue">0</div>
+        </div>
+        <div class="resource-box">
+            💰 Деньги
+            <div class="value" id="moneyValue">0</div>
+        </div>
+        <div class="resource-box">
+            💎 Радо-коины
+            <div class="value" id="radoValue">0</div>
+        </div>
+    </div>
+
+    <div class="level-info" id="levelInfo">Уровень 1 (0 / 100 энергии всего добыто)</div>
+
+    <div class="section">
+        <h3>🔄 Обмен</h3>
+        <p>Курс: 10 энергии = 1 монета</p>
+        <button onclick="exchangeEnergy()">Обменять 10 энергии → 1 монету</button>
+        <button onclick="exchangeMax()">💰 Обменять всё</button>
+    </div>
+
+    <div class="section">
+        <h3>🛠️ Генератор (за деньги)</h3>
+        <p>Добыча в секунду: <span id="epsValue">1</span></p>
+        <button id="upgradeBtn" onclick="buyUpgrade()">Улучшить генератор (стоимость: <span id="upgradeCost">10</span> монет)</button>
+    </div>
+
+    <div class="section">
+        <h3>🌀 Турбина (за деньги)</h3>
+        <p>Уровень турбины: <span id="turbineLevel">0</span> (+<span id="turbineEps">0</span> энергии/сек)</p>
+        <button id="turbineBtn" onclick="buyTurbine()">Купить турбину (стоимость: <span id="turbineCost">30</span> монет)</button>
+    </div>
+
+    <div class="section">
+        <h3>🔮 Супер-реактор (за деньги)</h3>
+        <p>Уровень супер-реактора: <span id="superLevel">0</span> (+<span id="superEps">0</span> энергии/сек)</p>
+        <button id="superBtn" onclick="buySuperReactor()">Купить модуль (стоимость: <span id="superCost">100</span> монет)</button>
+    </div>
+
+    <div class="section">
+        <h3>💎 Бонусы (за радо-коины)</h3>
+        <p>Множитель добычи: x<span id="multiplierValue">1</span></p>
+        <button id="bonusBtn" onclick="buyBonus()">Удвоить добычу навсегда (стоимость: <span id="bonusCost">5</span> коинов)</button>
+    </div>
+
+    <p id="message"></p>
+
+    <div id="offlineModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; align-items: center; justify-content: center;">
+        <div style="background: #2c2c3a; padding: 30px; border-radius: 16px; max-width: 350px; text-align: center;">
+            <h2 style="margin-top: 0;">⏰ С возвращением!</h2>
+            <p id="offlineModalText"></p>
+            <button onclick="closeOfflineModal()">Забрать</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    /* ---------- Состояние игры ---------- */
+    let energy = Number(localStorage.getItem("reactorEnergy")) || 0;
+    let money = Number(localStorage.getItem("reactorMoney")) || 0;
+    let radoCoins = Number(localStorage.getItem("reactorRado")) || 0;
+    let totalEnergyEarned = Number(localStorage.getItem("reactorTotalEnergy")) || 0;
+    let level = Number(localStorage.getItem("reactorLevel")) || 1;
+
+    let baseEps = Number(localStorage.getItem("reactorEps")) || 1;
+    let upgradeCost = Number(localStorage.getItem("reactorUpgradeCost")) || 10;
+
+    let turbineLevel = Number(localStorage.getItem("reactorTurbineLevel")) || 0;
+    let turbineCost = Number(localStorage.getItem("reactorTurbineCost")) || 30;
+
+    let superLevel = Number(localStorage.getItem("reactorSuperLevel")) || 0;
+    let superCost = Number(localStorage.getItem("reactorSuperCost")) || 100;
+
+    let multiplier = Number(localStorage.getItem("reactorMultiplier")) || 1;
+    let bonusCost = Number(localStorage.getItem("reactorBonusCost")) || 5;
+
+    function saveGame() {
+        localStorage.setItem("reactorLastSave", Date.now());
+        localStorage.setItem("reactorEnergy", energy);
+        localStorage.setItem("reactorMoney", money);
+        localStorage.setItem("reactorRado", radoCoins);
+        localStorage.setItem("reactorTotalEnergy", totalEnergyEarned);
+        localStorage.setItem("reactorLevel", level);
+        localStorage.setItem("reactorEps", baseEps);
+        localStorage.setItem("reactorUpgradeCost", upgradeCost);
+        localStorage.setItem("reactorTurbineLevel", turbineLevel);
+        localStorage.setItem("reactorTurbineCost", turbineCost);
+        localStorage.setItem("reactorSuperLevel", superLevel);
+        localStorage.setItem("reactorSuperCost", superCost);
+        localStorage.setItem("reactorMultiplier", multiplier);
+        localStorage.setItem("reactorBonusCost", bonusCost);
+    }
+
+    function getTotalEps() {
+        const turbineEps = turbineLevel * 3;
+        const superEps = superLevel * 10;
+        return (baseEps + turbineEps + superEps) * multiplier;
+    }
+
+    function levelThreshold(lvl) {
+        return Math.round(100 * Math.pow(1.8, lvl - 2));
+    }
+
+    function updateDisplay() {
+        document.getElementById("energyValue").textContent = Math.floor(energy);
+        document.getElementById("moneyValue").textContent = money;
+        document.getElementById("radoValue").textContent = radoCoins;
+
+        document.getElementById("epsValue").textContent = getTotalEps().toFixed(1);
+        document.getElementById("upgradeCost").textContent = upgradeCost;
+
+        document.getElementById("turbineLevel").textContent = turbineLevel;
+        document.getElementById("turbineEps").textContent = turbineLevel * 3;
+        document.getElementById("turbineCost").textContent = turbineCost;
+
+        document.getElementById("superLevel").textContent = superLevel;
+        document.getElementById("superEps").textContent = superLevel * 10;
+        document.getElementById("superCost").textContent = superCost;
+
+        document.getElementById("multiplierValue").textContent = multiplier;
+        document.getElementById("bonusCost").textContent = bonusCost;
+
+        const nextThreshold = levelThreshold(level + 1);
+        document.getElementById("levelInfo").textContent =
+            "Уровень " + level + " (" + Math.floor(totalEnergyEarned) + " / " + nextThreshold + " энергии всего добыто)";
+
+        document.getElementById("upgradeBtn").disabled = money < upgradeCost;
+        document.getElementById("turbineBtn").disabled = money < turbineCost;
+        document.getElementById("superBtn").disabled = money < superCost;
+        document.getElementById("bonusBtn").disabled = radoCoins < bonusCost;
+    }
+
+    function checkLevelUp() {
+        const nextThreshold = levelThreshold(level + 1);
+        if (totalEnergyEarned >= nextThreshold) {
+            level++;
+            radoCoins += 3;
+            showMessage("🎉 Новый уровень " + level + "! Получено 3 радо-коина!");
+            checkLevelUp();
+        }
+    }
+
+    function showMessage(text) {
+        const msg = document.getElementById("message");
+        msg.textContent = text;
+        setTimeout(() => { msg.textContent = ""; }, 2500);
+    }
+
+    /* ---------- Автоматический рост энергии ---------- */
+    setInterval(function () {
+        const gained = getTotalEps();
+        energy += gained;
+        totalEnergyEarned += gained;
+        checkLevelUp();
+        updateDisplay();
+        saveGame();
+    }, 1000);
+
+    /* ---------- Обмен ---------- */
+    function exchangeEnergy() {
+        if (energy < 10) {
+            showMessage("⚠️ Нужно минимум 10 энергии!");
+            return;
+        }
+        energy -= 10;
+        money += 1;
+        updateDisplay();
+        saveGame();
+    }
+
+    function exchangeMax() {
+        const coinsToGet = Math.floor(energy / 10);
+        if (coinsToGet < 1) {
+            showMessage("⚠️ Нужно минимум 10 энергии!");
+            return;
+        }
+        energy -= coinsToGet * 10;
+        money += coinsToGet;
+        showMessage("💰 Обменяно на " + coinsToGet + " монет!");
+        updateDisplay();
+        saveGame();
+    }
+
+    /* ---------- Улучшения ---------- */
+    function buyUpgrade() {
+        if (money < upgradeCost) return;
+        money -= upgradeCost;
+        baseEps += 1;
+        upgradeCost = Math.round(upgradeCost * 1.6);
+        showMessage("🛠️ Генератор улучшен!");
+        updateDisplay();
+        saveGame();
+    }
+
+    function buyTurbine() {
+        if (money < turbineCost) return;
+        money -= turbineCost;
+        turbineLevel += 1;
+        turbineCost = Math.round(turbineCost * 1.7);
+        showMessage("🌀 Турбина установлена!");
+        updateDisplay();
+        saveGame();
+    }
+
+    function buySuperReactor() {
+        if (money < superCost) return;
+        money -= superCost;
+        superLevel += 1;
+        superCost = Math.round(superCost * 1.8);
+        showMessage("🔮 Модуль супер-реактора добавлен!");
+        updateDisplay();
+        saveGame();
+    }
+
+    function buyBonus() {
+        if (radoCoins < bonusCost) return;
+        radoCoins -= bonusCost;
+        multiplier *= 2;
+        bonusCost = Math.round(bonusCost * 2.5);
+        showMessage("💎 Добыча удвоена навсегда!");
+        updateDisplay();
+        saveGame();
+    }
+
+    /* ---------- Офлайн-прогресс ---------- */
+    function applyOfflineProgress() {
+        const lastSave = Number(localStorage.getItem("reactorLastSave"));
+
+        if (!lastSave) {
+            return; // первый запуск игры, офлайн-времени нет
+        }
+
+        const secondsPassed = Math.floor((Date.now() - lastSave) / 1000);
+
+        // не даём накопить больше, чем за 12 часов офлайна (можно менять)
+        const maxSeconds = 12 * 60 * 60;
+        const effectiveSeconds = Math.min(secondsPassed, maxSeconds);
+
+        if (effectiveSeconds < 5) {
+            return; // прошло слишком мало времени, не считаем
+        }
+
+        const offlineEnergy = getTotalEps() * effectiveSeconds;
+        energy += offlineEnergy;
+        totalEnergyEarned += offlineEnergy;
+        checkLevelUp();
+
+        const minutes = Math.floor(effectiveSeconds / 60);
+        showOfflineModal(minutes, Math.floor(offlineEnergy));
+    }
+
+    function showOfflineModal(minutes, amount) {
+        document.getElementById("offlineModalText").textContent =
+            "Пока тебя не было (" + minutes + " мин), реактор добыл " + amount + " энергии!";
+        document.getElementById("offlineModal").style.display = "flex";
+    }
+
+    function closeOfflineModal() {
+        document.getElementById("offlineModal").style.display = "none";
+    }
+
+    /* ---------- Запуск ---------- */
+    applyOfflineProgress();
+    updateDisplay();
+    saveGame();
+
+</script>
+
+</body>
+</html>
