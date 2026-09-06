@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Чат-бот</title>
+<style>
+    * { box-sizing: border-box; }
+
+    body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Arial, sans-serif;
+        color: white;
+        background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.7)),
+            url("https://images.unsplash.com/photo-1500534623283-312aade485b7") center/cover fixed;
+        display: flex;
+        justify-content: center;
+        padding: 30px;
+    }
+
+    .container {
+        width: 100%;
+        max-width: 500px;
+        padding: 25px;
+        border-radius: 20px;
+        background: rgba(255,255,255,0.1);
+        backdrop-filter: blur(12px);
+        display: flex;
+        flex-direction: column;
+        height: 80vh;
+    }
+
+    a.back-link {
+        color: #aad4ff;
+        text-decoration: none;
+        font-size: 14px;
+    }
+
+    h1 { text-align: center; margin-top: 10px; }
+
+    #chatWindow {
+        flex: 1;
+        overflow-y: auto;
+        background: rgba(0,0,0,0.25);
+        border-radius: 14px;
+        padding: 15px;
+        margin: 15px 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .message {
+        padding: 8px 14px;
+        border-radius: 12px;
+        max-width: 80%;
+        font-size: 15px;
+    }
+
+    .user-message {
+        background: rgba(100,150,255,0.5);
+        align-self: flex-end;
+    }
+
+    .bot-message {
+        background: rgba(255,255,255,0.2);
+        align-self: flex-start;
+    }
+
+    .input-row {
+        display: flex;
+        gap: 8px;
+    }
+
+    #chatInput {
+        flex: 1;
+        padding: 12px;
+        border: none;
+        border-radius: 10px;
+        font-size: 15px;
+    }
+
+    button {
+        padding: 12px 18px;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 15px;
+        background: rgba(255,255,255,0.85);
+    }
+
+    button:hover { transform: scale(1.05); }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <a href="index.html" class="back-link">← Назад в портфолио</a>
+    <h1>🤖 Чат-бот</h1>
+
+    <div id="chatWindow"></div>
+
+    <div class="input-row">
+        <input type="text" id="chatInput" placeholder="Напиши что-нибудь..." autocomplete="off">
+        <button onclick="sendMessage()">Отправить</button>
+    </div>
+</div>
+
+<script>
+    const answers = {
+        "привет": "Привет, {имя}! Как дела?",
+        "здравствуй": "Здравствуй, {имя}! Рад тебя видеть 😊",
+        "как дела": "Всё отлично, {имя}, я же просто код 😄",
+        "как тебя зовут": "Я простой чат-бот на JavaScript!",
+        "сколько тебе лет": "У меня нет возраста, я родился только что 🤖",
+        "что ты умеешь": "Пока я умею только отвечать на заготовленные фразы 😅",
+        "кто тебя создал": "Меня написал Даня!",
+        "спасибо": "Всегда рад помочь, {имя}! 🙌",
+        "пока": "До встречи, {имя}! 👋",
+        "до свидания": "До скорого, {имя}!"
+    };
+
+    const unknownResponses = [
+        "Извини, я пока не понимаю эту фразу 🤔",
+        "Хм, об этом я ещё не знаю 😅",
+        "Можешь переформулировать? Я пока новичок в общении 🤖",
+        "Это выше моего понимания 😄",
+        "Я запишу это в блокнот, но пока не отвечу 📝"
+    ];
+
+    let userName = "";
+    let askedName = false;
+
+    function addMessage(text, sender) {
+        const chatWindow = document.getElementById("chatWindow");
+        const messageDiv = document.createElement("div");
+        messageDiv.className = "message " + (sender === "user" ? "user-message" : "bot-message");
+        messageDiv.textContent = text;
+        chatWindow.appendChild(messageDiv);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    function sendMessage() {
+        const input = document.getElementById("chatInput");
+        const rawMessage = input.value.trim();
+
+        if (rawMessage === "") return;
+
+        addMessage(rawMessage, "user");
+        input.value = "";
+
+        if (!askedName) {
+            userName = rawMessage;
+            askedName = true;
+            setTimeout(() => {
+                addMessage("Приятно познакомиться, " + userName + "! 😊", "bot");
+            }, 400);
+            return;
+        }
+
+        const cleanMessage = rawMessage.toLowerCase().replace(/[?!.,]/g, "").trim();
+
+        setTimeout(() => {
+            let response;
+            if (answers[cleanMessage]) {
+                response = answers[cleanMessage].replace("{имя}", userName);
+            } else {
+                response = unknownResponses[Math.floor(Math.random() * unknownResponses.length)];
+            }
+            addMessage(response, "bot");
+        }, 400);
+    }
+
+    document.getElementById("chatInput").addEventListener("keypress", function (e) {
+        if (e.key === "Enter") {
+            sendMessage();
+        }
+    });
+
+    addMessage("Привет! Как тебя зовут?", "bot");
+</script>
+
+</body>
+</html>
