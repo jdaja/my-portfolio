@@ -81,6 +81,18 @@
 </div>
 
 <script>
+    async function translateToRussian(text) {
+        const params = new URLSearchParams({
+            q: text,
+            langpair: "en|ru"
+        });
+
+        const response = await fetch("https://api.mymemory.translated.net/get?" + params);
+        const data = await response.json();
+
+        return data.responseData.translatedText;
+    }
+
     async function getQuote() {
         const button = document.getElementById("quoteBtn");
         const quoteText = document.getElementById("quoteText");
@@ -94,7 +106,11 @@
             const response = await fetch("https://dummyjson.com/quotes/random");
             const data = await response.json();
 
-            quoteText.textContent = "«" + data.quote + "»";
+            quoteText.textContent = "Переводим...";
+
+            const translated = await translateToRussian(data.quote);
+
+            quoteText.textContent = "«" + translated + "»";
             quoteAuthor.textContent = "— " + data.author;
         } catch (error) {
             quoteText.textContent = "Не удалось загрузить цитату. Попробуй ещё раз.";
