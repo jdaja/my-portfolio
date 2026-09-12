@@ -5,181 +5,247 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Чат-бот</title>
 <style>
+    :root {
+        --bg: #f6f6f8; --surface: #ffffff; --surface-2: #f0f0f3;
+        --text: #17171a; --muted: #66666e; --border: #e4e4e8;
+        --accent: #6c5ce7; --accent-soft: rgba(108,92,231,.12);
+        --good: #1f9d55; --bad: #d64545; --warn: #e8a13c;
+        --radius: 14px;
+        --shadow: 0 1px 2px rgba(20,20,25,.05), 0 8px 24px rgba(20,20,25,.07);
+    }
+    body.dark {
+        --bg: #121215; --surface: #1b1b1f; --surface-2: #242429;
+        --text: #f1f1f3; --muted: #a2a2ac; --border: #2d2d33;
+        --accent: #9a8cff; --accent-soft: rgba(154,140,255,.16);
+        --good: #3ecf7a; --bad: #ff6b6b; --warn: #f5b14c;
+        --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+    }
     * { box-sizing: border-box; }
-
     body {
-        margin: 0;
-        min-height: 100vh;
-        font-family: Arial, sans-serif;
-        color: white;
-        background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.7)),
-            url("https://images.unsplash.com/photo-1500534623283-312aade485b7") center/cover fixed;
-        display: flex;
-        justify-content: center;
-        padding: 30px;
+        margin: 0; min-height: 100vh; padding: 24px 16px;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+        background: var(--bg); color: var(--text); line-height: 1.6;
+        transition: background .3s, color .3s;
     }
-
-    .container {
-        width: 100%;
-        max-width: 500px;
-        padding: 25px;
-        border-radius: 20px;
-        background: rgba(255,255,255,0.1);
-        backdrop-filter: blur(12px);
-        display: flex;
-        flex-direction: column;
-        height: 80vh;
+    button, input, select { font: inherit; }
+    .wrap { max-width: 640px; margin: 0 auto; }
+    .card {
+        background: var(--surface); border: 1px solid var(--border);
+        border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px;
     }
-
-    a.back-link {
-        color: #aad4ff;
-        text-decoration: none;
-        font-size: 14px;
+    .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .back { color: var(--muted); text-decoration: none; font-size: 14px; }
+    .back:hover { color: var(--text); }
+    #themeBtn {
+        border: 1px solid var(--border); background: var(--surface); color: var(--text);
+        border-radius: 999px; padding: 6px 12px; cursor: pointer; font-size: 13px;
     }
-
-    h1 { text-align: center; margin-top: 10px; }
-
-    #chatWindow {
-        flex: 1;
-        overflow-y: auto;
-        background: rgba(0,0,0,0.25);
-        border-radius: 14px;
-        padding: 15px;
-        margin: 15px 0;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
+    #themeBtn:hover { background: var(--surface-2); }
+    h1 { font-size: 22px; margin: 0 0 12px; }
+    .btn {
+        padding: 10px 18px; border: none; border-radius: 10px; cursor: pointer;
+        font-size: 15px; font-weight: 600; background: var(--accent); color: #fff;
+        transition: filter .15s, transform .15s;
     }
+    .btn:hover { filter: brightness(1.08); }
+    .btn:active { transform: scale(.97); }
+    .btn-ghost { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
+    .btn-ghost:hover { background: var(--border); filter: none; }
 
-    .message {
-        padding: 8px 14px;
-        border-radius: 12px;
-        max-width: 80%;
-        font-size: 15px;
+    .chat {
+        height: 55vh; min-height: 320px; overflow-y: auto;
+        background: var(--surface-2); border-radius: 12px; padding: 14px;
+        display: flex; flex-direction: column; gap: 8px; margin: 12px 0;
     }
-
-    .user-message {
-        background: rgba(100,150,255,0.5);
-        align-self: flex-end;
+    .msg-row { display: flex; gap: 8px; align-items: flex-end; }
+    .msg-row.user { justify-content: flex-end; }
+    .avatar {
+        width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+        background: var(--accent-soft); color: var(--accent);
+        display: flex; align-items: center; justify-content: center; font-size: 14px;
     }
-
-    .bot-message {
-        background: rgba(255,255,255,0.2);
-        align-self: flex-start;
+    .bubble {
+        padding: 9px 14px; border-radius: 14px; max-width: 78%;
+        font-size: 15px; line-height: 1.45;
     }
-
-    .input-row {
-        display: flex;
-        gap: 8px;
+    .bot .bubble { background: var(--surface); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+    .user .bubble { background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
+    .typing { display: inline-flex; gap: 4px; padding: 12px 14px; }
+    .typing i {
+        width: 6px; height: 6px; border-radius: 50%; background: var(--muted);
+        animation: blink 1s infinite;
     }
-
+    .typing i:nth-child(2) { animation-delay: .2s; }
+    .typing i:nth-child(3) { animation-delay: .4s; }
+    @keyframes blink { 0%, 100% { opacity: .3; } 50% { opacity: 1; } }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+    .chip {
+        border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
+        border-radius: 999px; padding: 5px 12px; font-size: 13px; cursor: pointer;
+        transition: background .15s;
+    }
+    .chip:hover { background: var(--border); }
+    .input-row { display: flex; gap: 8px; }
     #chatInput {
-        flex: 1;
-        padding: 12px;
-        border: none;
-        border-radius: 10px;
-        font-size: 15px;
+        flex: 1; padding: 11px 14px; border: 1px solid var(--border); border-radius: 10px;
+        font-size: 15px; background: var(--surface-2); color: var(--text);
     }
-
-    button {
-        padding: 12px 18px;
-        border: none;
-        border-radius: 10px;
-        cursor: pointer;
-        font-size: 15px;
-        background: rgba(255,255,255,0.85);
-    }
-
-    button:hover { transform: scale(1.05); }
+    #chatInput:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
 </style>
+<base target="_blank">
 </head>
 <body>
-
-<div class="container">
-    <a href="index.html" class="back-link">← Назад в портфолио</a>
+<div class="wrap" style="max-width: 520px;">
+  <div class="topbar">
+    <a class="back" href="index.html">← Назад в портфолио</a>
+    <button id="themeBtn" onclick="toggleTheme()">🌙 Тёмная</button>
+  </div>
+  <div class="card">
     <h1>🤖 Чат-бот</h1>
-
-    <div id="chatWindow"></div>
-
+    <div class="chips" id="chips"></div>
+    <div class="chat" id="chatWindow"></div>
     <div class="input-row">
         <input type="text" id="chatInput" placeholder="Напиши что-нибудь..." autocomplete="off">
-        <button onclick="sendMessage()">Отправить</button>
+        <button class="btn" onclick="sendMessage()">Отправить</button>
     </div>
+    <div style="text-align:center; margin-top:10px;">
+        <button class="btn btn-ghost" style="font-size:13px; padding:6px 14px;" onclick="clearChat()">🗑 Очистить чат</button>
+    </div>
+  </div>
 </div>
-
 <script>
-    const answers = {
-        "привет": "Привет, {имя}! Как дела?",
-        "здравствуй": "Здравствуй, {имя}! Рад тебя видеть 😊",
-        "как дела": "Всё отлично, {имя}, я же просто код 😄",
-        "как тебя зовут": "Я простой чат-бот на JavaScript!",
-        "сколько тебе лет": "У меня нет возраста, я родился только что 🤖",
-        "что ты умеешь": "Пока я умею только отвечать на заготовленные фразы 😅",
-        "кто тебя создал": "Меня написал Даня!",
-        "спасибо": "Всегда рад помочь, {имя}! 🙌",
-        "пока": "До встречи, {имя}! 👋",
-        "до свидания": "До скорого, {имя}!"
+
+    function toggleTheme() {
+        document.body.classList.toggle("dark");
+        localStorage.setItem("theme", document.body.classList.contains("dark") ? "dark" : "light");
+        updateThemeBtn();
+    }
+    function updateThemeBtn() {
+        document.getElementById("themeBtn").textContent =
+            document.body.classList.contains("dark") ? "☀️ Светлая" : "🌙 Тёмная";
+    }
+    if (localStorage.getItem("theme") === "dark") document.body.classList.add("dark");
+    updateThemeBtn();
+
+const answers = {
+    "привет": "Привет, {имя}! Как дела?",
+    "здравствуй": "Здравствуй, {имя}! Рад тебя видеть 😊",
+    "как дела": "Всё отлично, {имя}, я же просто код 😄 А у тебя как?",
+    "как тебя зовут": "Я Ботан — простой чат-бот на JavaScript!",
+    "сколько тебе лет": "У меня нет возраста, я родился только что 🤖",
+    "что ты умеешь": "Отвечаю на заготовленные фразы и не стесняюсь этого 😅",
+    "кто тебя создал": "Меня написал Даня!",
+    "расскажи шутку": "Почему программист путает Хэллоуин и Рождество? Потому что Oct 31 == Dec 25 😄",
+    "который час": "Я живу в браузере — у меня нет часов, но точно время кодить!",
+    "спасибо": "Всегда рад помочь, {имя}! 🙌",
+    "пока": "До встречи, {имя}! 👋",
+    "до свидания": "До скорого, {имя}!"
+};
+
+const suggestions = ["Привет", "Как дела?", "Как тебя зовут?", "Расскажи шутку", "Кто тебя создал?"];
+
+const unknownResponses = [
+    "Извини, я пока не понимаю эту фразу 🤔",
+    "Хм, об этом я ещё не знаю 😅",
+    "Можешь переформулировать? Я пока новичок в общении 🤖",
+    "Это выше моего понимания 😄",
+    "Записал в блокнот, но пока не отвечу 📝"
+];
+
+let userName = localStorage.getItem("chatbotName") || "";
+let askedName = Boolean(userName);
+
+function addMessage(text, sender) {
+    const chat = document.getElementById("chatWindow");
+    const row = document.createElement("div");
+    row.className = "msg-row " + sender;
+    if (sender === "bot") {
+        const av = document.createElement("div");
+        av.className = "avatar";
+        av.textContent = "🤖";
+        row.appendChild(av);
+    }
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+    bubble.textContent = text;
+    row.appendChild(bubble);
+    chat.appendChild(row);
+    chat.scrollTop = chat.scrollHeight;
+}
+
+function showTyping() {
+    const chat = document.getElementById("chatWindow");
+    const row = document.createElement("div");
+    row.className = "msg-row bot";
+    row.id = "typingRow";
+    row.innerHTML = '<div class="avatar">🤖</div><div class="bubble typing"><i></i><i></i><i></i></div>';
+    chat.appendChild(row);
+    chat.scrollTop = chat.scrollHeight;
+}
+
+function hideTyping() {
+    const row = document.getElementById("typingRow");
+    if (row) row.remove();
+}
+
+function botReply(getText, delay) {
+    showTyping();
+    setTimeout(function () {
+        hideTyping();
+        addMessage(getText(), "bot");
+    }, delay);
+}
+
+function sendMessage() {
+    const input = document.getElementById("chatInput");
+    const raw = input.value.trim();
+    if (raw === "") return;
+
+    addMessage(raw, "user");
+    input.value = "";
+
+    if (!askedName) {
+        userName = raw.split(" ")[0];
+        askedName = true;
+        localStorage.setItem("chatbotName", userName);
+        botReply(function () { return "Приятно познакомиться, " + userName + "! 😊 Спроси меня о чём-нибудь."; }, 600);
+        return;
+    }
+
+    const clean = raw.toLowerCase().replace(/[?!.,]/g, "").trim();
+    botReply(function () {
+        if (answers[clean]) return answers[clean].replace("{имя}", userName);
+        return unknownResponses[Math.floor(Math.random() * unknownResponses.length)];
+    }, 500 + Math.random() * 700);
+}
+
+function clearChat() {
+    document.getElementById("chatWindow").innerHTML = "";
+    if (askedName) addMessage("Чат очищен. Что обсудим, " + userName + "?", "bot");
+    else addMessage("Привет! Как тебя зовут?", "bot");
+}
+
+document.getElementById("chatInput").addEventListener("keypress", function (e) {
+    if (e.key === "Enter") sendMessage();
+});
+
+const chipsEl = document.getElementById("chips");
+suggestions.forEach(function (s) {
+    const b = document.createElement("button");
+    b.className = "chip";
+    b.textContent = s;
+    b.onclick = function () {
+        document.getElementById("chatInput").value = s;
+        sendMessage();
     };
+    chipsEl.appendChild(b);
+});
 
-    const unknownResponses = [
-        "Извини, я пока не понимаю эту фразу 🤔",
-        "Хм, об этом я ещё не знаю 😅",
-        "Можешь переформулировать? Я пока новичок в общении 🤖",
-        "Это выше моего понимания 😄",
-        "Я запишу это в блокнот, но пока не отвечу 📝"
-    ];
-
-    let userName = "";
-    let askedName = false;
-
-    function addMessage(text, sender) {
-        const chatWindow = document.getElementById("chatWindow");
-        const messageDiv = document.createElement("div");
-        messageDiv.className = "message " + (sender === "user" ? "user-message" : "bot-message");
-        messageDiv.textContent = text;
-        chatWindow.appendChild(messageDiv);
-        chatWindow.scrollTop = chatWindow.scrollHeight;
-    }
-
-    function sendMessage() {
-        const input = document.getElementById("chatInput");
-        const rawMessage = input.value.trim();
-
-        if (rawMessage === "") return;
-
-        addMessage(rawMessage, "user");
-        input.value = "";
-
-        if (!askedName) {
-            userName = rawMessage;
-            askedName = true;
-            setTimeout(() => {
-                addMessage("Приятно познакомиться, " + userName + "! 😊", "bot");
-            }, 400);
-            return;
-        }
-
-        const cleanMessage = rawMessage.toLowerCase().replace(/[?!.,]/g, "").trim();
-
-        setTimeout(() => {
-            let response;
-            if (answers[cleanMessage]) {
-                response = answers[cleanMessage].replace("{имя}", userName);
-            } else {
-                response = unknownResponses[Math.floor(Math.random() * unknownResponses.length)];
-            }
-            addMessage(response, "bot");
-        }, 400);
-    }
-
-    document.getElementById("chatInput").addEventListener("keypress", function (e) {
-        if (e.key === "Enter") {
-            sendMessage();
-        }
-    });
-
+if (askedName) {
+    addMessage("С возвращением, " + userName + "! 😊 Что обсудим?", "bot");
+} else {
     addMessage("Привет! Как тебя зовут?", "bot");
+}
 </script>
-
 </body>
 </html>
