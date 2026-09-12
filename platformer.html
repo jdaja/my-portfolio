@@ -5,331 +5,484 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Платформер</title>
 <style>
+    :root {
+        --bg: #f6f6f8; --surface: #ffffff; --surface-2: #f0f0f3;
+        --text: #17171a; --muted: #66666e; --border: #e4e4e8;
+        --accent: #6c5ce7; --accent-soft: rgba(108,92,231,.12);
+        --good: #1f9d55; --bad: #d64545; --warn: #e8a13c;
+        --radius: 14px;
+        --shadow: 0 1px 2px rgba(20,20,25,.05), 0 8px 24px rgba(20,20,25,.07);
+    }
+    body.dark {
+        --bg: #121215; --surface: #1b1b1f; --surface-2: #242429;
+        --text: #f1f1f3; --muted: #a2a2ac; --border: #2d2d33;
+        --accent: #9a8cff; --accent-soft: rgba(154,140,255,.16);
+        --good: #3ecf7a; --bad: #ff6b6b; --warn: #f5b14c;
+        --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+    }
     * { box-sizing: border-box; }
-
     body {
-        margin: 0;
-        min-height: 100vh;
-        font-family: Arial, sans-serif;
-        color: white;
-        background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.7)),
-            url("https://images.unsplash.com/photo-1500534623283-312aade485b7") center/cover fixed;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 30px;
+        margin: 0; min-height: 100vh; padding: 24px 16px;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+        background: var(--bg); color: var(--text); line-height: 1.6;
+        transition: background .3s, color .3s;
     }
-
-    a.back-link {
-        color: #aad4ff;
-        text-decoration: none;
-        font-size: 14px;
-        align-self: flex-start;
-        margin-bottom: 10px;
+    button, input, select { font: inherit; }
+    .wrap { max-width: 640px; margin: 0 auto; }
+    .card {
+        background: var(--surface); border: 1px solid var(--border);
+        border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px;
     }
-
-    h1 { margin-top: 0; }
-
-    #status {
-        font-size: 16px;
-        margin-bottom: 5px;
-        min-height: 22px;
-        color: #ffe58a;
+    .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .back { color: var(--muted); text-decoration: none; font-size: 14px; }
+    .back:hover { color: var(--text); }
+    #themeBtn {
+        border: 1px solid var(--border); background: var(--surface); color: var(--text);
+        border-radius: 999px; padding: 6px 12px; cursor: pointer; font-size: 13px;
     }
-
-    #hud {
-        font-size: 15px;
-        margin-bottom: 10px;
-        color: #ddd;
+    #themeBtn:hover { background: var(--surface-2); }
+    h1 { font-size: 22px; margin: 0 0 12px; }
+    .btn {
+        padding: 10px 18px; border: none; border-radius: 10px; cursor: pointer;
+        font-size: 15px; font-weight: 600; background: var(--accent); color: #fff;
+        transition: filter .15s, transform .15s;
     }
+    .btn:hover { filter: brightness(1.08); }
+    .btn:active { transform: scale(.97); }
+    .btn-ghost { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
+    .btn-ghost:hover { background: var(--border); filter: none; }
 
+    .hud { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 15px; color: var(--muted); flex-wrap: wrap; gap: 6px; }
+    .hud b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+    .stage { position: relative; width: 100%; max-width: 640px; margin: 0 auto; }
     canvas {
-        background: linear-gradient(#1a1a2e, #16213e);
-        border-radius: 12px;
-        border: 2px solid rgba(255,255,255,0.3);
+        width: 100%; display: block; border-radius: 12px;
+        border: 1px solid var(--border); background: #16213e; touch-action: none;
     }
-
-    p.hint {
-        margin-top: 12px;
-        font-size: 14px;
-        color: #ccc;
+    .overlay {
+        position: absolute; inset: 0; display: none; flex-direction: column;
+        align-items: center; justify-content: center; gap: 12px;
+        background: rgba(10,10,20,.55); backdrop-filter: blur(3px);
+        border-radius: 12px; text-align: center; padding: 16px; color: #fff;
     }
-
-    button {
-        padding: 10px 18px;
-        margin-top: 10px;
-        border: none;
-        border-radius: 10px;
-        cursor: pointer;
-        font-size: 15px;
-        background: rgba(255,255,255,0.85);
+    .overlay.show { display: flex; }
+    .overlay h2 { margin: 0; font-size: 24px; }
+    .overlay p { margin: 0; opacity: .85; }
+    .hint { text-align: center; font-size: 14px; color: var(--muted); margin: 12px 0 0; }
+    .pad { display: none; justify-content: space-between; margin-top: 14px; user-select: none; }
+    .pad .grp { display: flex; gap: 10px; }
+    .pad button {
+        width: 64px; height: 64px; border-radius: 14px; font-size: 22px;
+        border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
+        touch-action: none;
     }
+    .pad button:active { background: var(--border); }
+    @media (pointer: coarse) { .pad { display: flex; } }
+    .row { display: flex; gap: 10px; justify-content: center; margin-top: 14px; }
 </style>
+<base target="_blank">
 </head>
 <body>
-
-<a href="index.html" class="back-link">← Назад в портфолио</a>
-<h1>🏃 Мини-платформер</h1>
-<div id="status">Дойди до жёлтого флага 🚩</div>
-<div id="hud">Уровень: 1 / 2 | Монеты: 0</div>
-
-<canvas id="gameCanvas" width="600" height="350"></canvas>
-
-<p class="hint">← → или A/D чтобы двигаться, ПРОБЕЛ или W чтобы прыгать</p>
-<button onclick="restartGame()">🔄 Начать с начала</button>
-
+<div class="wrap">
+  <div class="topbar">
+    <a class="back" href="index.html">← Назад в портфолио</a>
+    <button id="themeBtn" onclick="toggleTheme()">🌙 Тёмная</button>
+  </div>
+  <div class="card">
+    <h1>🏃 Мини-платформер</h1>
+    <div class="hud">
+      <span>Уровень: <b id="hudLevel">1 / 2</b></span>
+      <span>Монеты: <b id="hudCoins">0</b></span>
+    </div>
+    <div class="stage">
+      <canvas id="gameCanvas" width="640" height="360"></canvas>
+      <div class="overlay" id="overlay">
+        <h2 id="ovTitle">Платформер</h2>
+        <p id="ovText">Дойди до флага 🚩<br>Собирай монеты, прыгай на врагов сверху, избегай шипов.</p>
+        <button class="btn" id="ovBtn">Играть</button>
+      </div>
+    </div>
+    <p class="hint">← → или A/D — движение, ПРОБЕЛ / W / ↑ — прыжок</p>
+    <div class="pad">
+      <div class="grp">
+        <button id="btnLeft">←</button>
+        <button id="btnRight">→</button>
+      </div>
+      <div class="grp">
+        <button id="btnJump">⤒</button>
+      </div>
+    </div>
+    <div class="row">
+      <button class="btn btn-ghost" onclick="restartGame()">🔄 Начать с начала</button>
+    </div>
+  </div>
+</div>
 <script>
-    const canvas = document.getElementById("gameCanvas");
-    const ctx = canvas.getContext("2d");
 
-    const gravity = 0.6;
-    const moveSpeed = 4;
-    const jumpPower = -12;
-
-    /* ---------- Уровни ---------- */
-    const levels = [
-        {
-            playerStart: { x: 30, y: 250 },
-            platforms: [
-                { x: 0, y: 320, width: 600, height: 30 },
-                { x: 150, y: 250, width: 100, height: 15 },
-                { x: 320, y: 190, width: 100, height: 15 },
-                { x: 470, y: 130, width: 100, height: 15 }
-            ],
-            spikes: [
-                { x: 260, y: 305, width: 30, height: 15 }
-            ],
-            coins: [
-                { x: 190, y: 220, radius: 8, collected: false },
-                { x: 360, y: 160, radius: 8, collected: false },
-                { x: 510, y: 100, radius: 8, collected: false }
-            ],
-            enemies: [
-                { x: 400, y: 300, width: 26, height: 26, minX: 350, maxX: 550, speed: 1.5, dir: 1, alive: true }
-            ],
-            flag: { x: 550, y: 90, width: 20, height: 40 }
-        },
-        {
-            playerStart: { x: 30, y: 250 },
-            platforms: [
-                { x: 0, y: 320, width: 600, height: 30 },
-                { x: 100, y: 260, width: 80, height: 15 },
-                { x: 230, y: 220, width: 80, height: 15 },
-                { x: 360, y: 260, width: 80, height: 15 },
-                { x: 480, y: 180, width: 100, height: 15 }
-            ],
-            spikes: [
-                { x: 190, y: 305, width: 30, height: 15 },
-                { x: 320, y: 305, width: 30, height: 15 }
-            ],
-            coins: [
-                { x: 140, y: 230, radius: 8, collected: false },
-                { x: 270, y: 190, radius: 8, collected: false },
-                { x: 400, y: 230, radius: 8, collected: false },
-                { x: 520, y: 150, radius: 8, collected: false }
-            ],
-            enemies: [
-                { x: 100, y: 234, width: 26, height: 26, minX: 100, maxX: 180, speed: 1.2, dir: 1, alive: true },
-                { x: 480, y: 154, width: 26, height: 26, minX: 480, maxX: 560, speed: 1.8, dir: 1, alive: true }
-            ],
-            flag: { x: 550, y: 140, width: 20, height: 40 }
-        }
-    ];
-
-    let currentLevelIndex = 0;
-    let currentLevel;
-    let player;
-    let coinsCollected = 0;
-    let keys = {};
-    let gameWon = false;
-    let gameOver = false;
-
-    function loadLevel(index) {
-        currentLevel = JSON.parse(JSON.stringify(levels[index])); // копия уровня, чтобы монеты/враги сбрасывались
-        player = {
-            x: currentLevel.playerStart.x,
-            y: currentLevel.playerStart.y,
-            width: 30,
-            height: 30,
-            vx: 0,
-            vy: 0,
-            onGround: false
-        };
-        gameWon = false;
-        gameOver = false;
-        document.getElementById("status").textContent = "Дойди до жёлтого флага 🚩";
-        document.getElementById("hud").textContent =
-            "Уровень: " + (index + 1) + " / " + levels.length + " | Монеты: " + coinsCollected;
+    function toggleTheme() {
+        document.body.classList.toggle("dark");
+        localStorage.setItem("theme", document.body.classList.contains("dark") ? "dark" : "light");
+        updateThemeBtn();
     }
-
-    document.addEventListener("keydown", function (e) {
-        const key = e.key.toLowerCase();
-        keys[key] = true;
-        if (key === " ") e.preventDefault();
-    });
-
-    document.addEventListener("keyup", function (e) {
-        keys[e.key.toLowerCase()] = false;
-    });
-
-    function rectsOverlap(a, b) {
-        return a.x < b.x + b.width &&
-               a.x + a.width > b.x &&
-               a.y < b.y + b.height &&
-               a.y + a.height > b.y;
+    function updateThemeBtn() {
+        document.getElementById("themeBtn").textContent =
+            document.body.classList.contains("dark") ? "☀️ Светлая" : "🌙 Тёмная";
     }
+    if (localStorage.getItem("theme") === "dark") document.body.classList.add("dark");
+    updateThemeBtn();
 
-    function circleRectOverlap(circle, rect) {
-        const closestX = Math.max(rect.x, Math.min(circle.x, rect.x + rect.width));
-        const closestY = Math.max(rect.y, Math.min(circle.y, rect.y + rect.height));
-        const dx = circle.x - closestX;
-        const dy = circle.y - closestY;
-        return (dx * dx + dy * dy) < (circle.radius * circle.radius);
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+const gravity = 0.6;
+const moveSpeed = 4;
+const jumpPower = -12;
+const W = canvas.width, H = canvas.height;
+
+/* ---------- Уровни (подогнаны под холст 640x360) ---------- */
+const levels = [
+    {
+        playerStart: { x: 30, y: 250 },
+        platforms: [
+            { x: 0, y: 330, width: 640, height: 30 },
+            { x: 160, y: 265, width: 110, height: 15 },
+            { x: 340, y: 205, width: 110, height: 15 },
+            { x: 500, y: 145, width: 110, height: 15 }
+        ],
+        spikes: [ { x: 290, y: 315, width: 34, height: 15 } ],
+        coins: [
+            { x: 215, y: 238, radius: 8, collected: false },
+            { x: 395, y: 178, radius: 8, collected: false },
+            { x: 555, y: 118, radius: 8, collected: false }
+        ],
+        enemies: [
+            { x: 430, y: 304, width: 26, height: 26, minX: 370, maxX: 610, speed: 1.5, dir: 1, alive: true }
+        ],
+        flag: { x: 600, y: 105, width: 16, height: 40 }
+    },
+    {
+        playerStart: { x: 30, y: 250 },
+        platforms: [
+            { x: 0, y: 330, width: 640, height: 30 },
+            { x: 110, y: 275, width: 90, height: 15 },
+            { x: 250, y: 235, width: 90, height: 15 },
+            { x: 390, y: 275, width: 90, height: 15 },
+            { x: 510, y: 195, width: 110, height: 15 }
+        ],
+        spikes: [ { x: 210, y: 315, width: 34, height: 15 }, { x: 340, y: 315, width: 34, height: 15 } ],
+        coins: [
+            { x: 155, y: 248, radius: 8, collected: false },
+            { x: 295, y: 208, radius: 8, collected: false },
+            { x: 435, y: 248, radius: 8, collected: false },
+            { x: 565, y: 168, radius: 8, collected: false }
+        ],
+        enemies: [
+            { x: 110, y: 249, width: 26, height: 26, minX: 110, maxX: 174, speed: 1.2, dir: 1, alive: true },
+            { x: 510, y: 169, width: 26, height: 26, minX: 510, maxX: 594, speed: 1.8, dir: 1, alive: true }
+        ],
+        flag: { x: 600, y: 155, width: 16, height: 40 }
     }
+];
 
-    function update() {
-        if (gameWon || gameOver) return;
+let currentLevelIndex = 0;
+let currentLevel;
+let player;
+let coinsCollected = 0;
+let coinsAtLevelStart = 0;
+let keys = {};
+let gameWon = false;
+let gameOver = false;
+let started = false;
+let playerFacing = 1;
 
-        if (keys["arrowleft"] || keys["a"]) player.vx = -moveSpeed;
-        else if (keys["arrowright"] || keys["d"]) player.vx = moveSpeed;
-        else player.vx = 0;
+function loadLevel(index) {
+    currentLevel = JSON.parse(JSON.stringify(levels[index]));
+    player = {
+        x: currentLevel.playerStart.x, y: currentLevel.playerStart.y,
+        width: 28, height: 28, vx: 0, vy: 0, onGround: false
+    };
+    coinsAtLevelStart = coinsCollected;
+    gameWon = false;
+    gameOver = false;
+    updateHud();
+}
 
-        if ((keys[" "] || keys["w"]) && player.onGround) {
-            player.vy = jumpPower;
-            player.onGround = false;
-        }
+function updateHud() {
+    document.getElementById("hudLevel").textContent = (currentLevelIndex + 1) + " / " + levels.length;
+    document.getElementById("hudCoins").textContent = coinsCollected;
+}
 
-        player.vy += gravity;
-        player.x += player.vx;
-        player.y += player.vy;
+function showOverlay(title, text, btn) {
+    document.getElementById("ovTitle").textContent = title;
+    document.getElementById("ovText").innerHTML = text;
+    document.getElementById("ovBtn").textContent = btn;
+    document.getElementById("overlay").classList.add("show");
+}
+function hideOverlay() { document.getElementById("overlay").classList.remove("show"); }
+
+document.getElementById("ovBtn").addEventListener("click", function () {
+    hideOverlay();
+    started = true;
+});
+
+function rectsOverlap(a, b) {
+    return a.x < b.x + b.width && a.x + a.width > b.x &&
+           a.y < b.y + b.height && a.y + a.height > b.y;
+}
+
+function circleRectOverlap(circle, rect) {
+    const closestX = Math.max(rect.x, Math.min(circle.x, rect.x + rect.width));
+    const closestY = Math.max(rect.y, Math.min(circle.y, rect.y + rect.height));
+    const dx = circle.x - closestX, dy = circle.y - closestY;
+    return (dx * dx + dy * dy) < (circle.radius * circle.radius);
+}
+
+function respawn() {
+    coinsCollected = coinsAtLevelStart;
+    loadLevel(currentLevelIndex);
+}
+
+function update() {
+    if (!started || gameWon || gameOver) return;
+
+    if (keys["arrowleft"] || keys["a"]) { player.vx = -moveSpeed; playerFacing = -1; }
+    else if (keys["arrowright"] || keys["d"]) { player.vx = moveSpeed; playerFacing = 1; }
+    else player.vx = 0;
+
+    if ((keys[" "] || keys["w"] || keys["arrowup"]) && player.onGround) {
+        player.vy = jumpPower;
         player.onGround = false;
+    }
 
-        currentLevel.platforms.forEach(function (platform) {
-            if (rectsOverlap(player, platform) && player.vy >= 0) {
-                const playerBottomPrev = player.y - player.vy;
-                if (playerBottomPrev + player.height <= platform.y + 5) {
-                    player.y = platform.y - player.height;
-                    player.vy = 0;
-                    player.onGround = true;
-                }
+    player.vy += gravity;
+    player.x += player.vx;
+    player.y += player.vy;
+    player.onGround = false;
+
+    // не выходить за края по горизонтали
+    if (player.x < 0) player.x = 0;
+    if (player.x + player.width > W) player.x = W - player.width;
+
+    currentLevel.platforms.forEach(function (p) {
+        if (rectsOverlap(player, p) && player.vy >= 0) {
+            const prevBottom = player.y - player.vy + player.height;
+            if (prevBottom <= p.y + 5) {
+                player.y = p.y - player.height;
+                player.vy = 0;
+                player.onGround = true;
             }
-        });
-
-        // движение врагов (патрулирование)
-        currentLevel.enemies.forEach(function (enemy) {
-            if (!enemy.alive) return;
-            enemy.x += enemy.speed * enemy.dir;
-            if (enemy.x <= enemy.minX || enemy.x + enemy.width >= enemy.maxX) {
-                enemy.dir *= -1;
-            }
-        });
-
-        // столкновения с врагами
-        currentLevel.enemies.forEach(function (enemy) {
-            if (!enemy.alive) return;
-            if (rectsOverlap(player, enemy)) {
-                const playerBottomPrev = player.y - player.vy;
-                if (player.vy > 0 && playerBottomPrev + player.height <= enemy.y + 8) {
-                    // прыжок сверху - враг погибает
-                    enemy.alive = false;
-                    player.vy = jumpPower / 1.5; // небольшой отскок
-                } else {
-                    endGame(false, "Тебя поймал враг!");
-                }
-            }
-        });
-
-        // сбор монет
-        currentLevel.coins.forEach(function (coin) {
-            if (!coin.collected && circleRectOverlap(coin, player)) {
-                coin.collected = true;
-                coinsCollected++;
-                document.getElementById("hud").textContent =
-                    "Уровень: " + (currentLevelIndex + 1) + " / " + levels.length + " | Монеты: " + coinsCollected;
-            }
-        });
-
-        // шипы
-        currentLevel.spikes.forEach(function (spike) {
-            if (rectsOverlap(player, spike)) {
-                endGame(false, "Ты наступил на шипы!");
-            }
-        });
-
-        // падение вниз экрана
-        if (player.y > canvas.height) {
-            endGame(false, "Ты упал вниз!");
         }
+    });
 
-        // флаг - переход на следующий уровень или победа
-        if (rectsOverlap(player, currentLevel.flag)) {
-            if (currentLevelIndex < levels.length - 1) {
-                currentLevelIndex++;
-                loadLevel(currentLevelIndex);
+    currentLevel.enemies.forEach(function (enemy) {
+        if (!enemy.alive) return;
+        enemy.x += enemy.speed * enemy.dir;
+        if (enemy.x <= enemy.minX || enemy.x + enemy.width >= enemy.maxX) enemy.dir *= -1;
+    });
+
+    currentLevel.enemies.forEach(function (enemy) {
+        if (!enemy.alive) return;
+        if (rectsOverlap(player, enemy)) {
+            const prevBottom = player.y - player.vy + player.height;
+            if (player.vy > 0 && prevBottom <= enemy.y + 8) {
+                enemy.alive = false;
+                player.vy = jumpPower / 1.5;
             } else {
-                gameWon = true;
-                document.getElementById("status").textContent =
-                    "🎉 Игра пройдена! Всего монет: " + coinsCollected;
+                gameOver = true;
+                showOverlay("💀 Тебя поймал враг!", "Уровень начнётся заново.", "Ещё раз");
+                setTimeout(function () { if (gameOver) respawn(); }, 600);
             }
         }
-    }
+    });
 
-    function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    currentLevel.coins.forEach(function (coin) {
+        if (!coin.collected && circleRectOverlap(coin, player)) {
+            coin.collected = true;
+            coinsCollected++;
+            updateHud();
+        }
+    });
 
-        ctx.fillStyle = "#4a4a6a";
-        currentLevel.platforms.forEach(function (p) {
-            ctx.fillRect(p.x, p.y, p.width, p.height);
-        });
+    currentLevel.spikes.forEach(function (spike) {
+        if (rectsOverlap(player, spike)) {
+            gameOver = true;
+            showOverlay("💀 Шипы!", "Уровень начнётся заново.", "Ещё раз");
+            setTimeout(function () { if (gameOver) respawn(); }, 600);
+        }
+    });
 
-        ctx.fillStyle = "#e74c3c";
-        currentLevel.spikes.forEach(function (s) {
-            ctx.fillRect(s.x, s.y, s.width, s.height);
-        });
-
-        ctx.fillStyle = "#f1c40f";
-        currentLevel.coins.forEach(function (c) {
-            if (!c.collected) {
-                ctx.beginPath();
-                ctx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
-                ctx.fill();
-            }
-        });
-
-        ctx.fillStyle = "#9b59b6";
-        currentLevel.enemies.forEach(function (e) {
-            if (e.alive) {
-                ctx.fillRect(e.x, e.y, e.width, e.height);
-            }
-        });
-
-        ctx.fillStyle = "#f1c40f";
-        ctx.fillRect(currentLevel.flag.x, currentLevel.flag.y, currentLevel.flag.width, currentLevel.flag.height);
-
-        ctx.fillStyle = "#2ecc71";
-        ctx.fillRect(player.x, player.y, player.width, player.height);
-    }
-
-    function gameLoop() {
-        update();
-        draw();
-        requestAnimationFrame(gameLoop);
-    }
-
-    function endGame(won, message) {
+    if (player.y > H + 40) {
         gameOver = true;
-        document.getElementById("status").textContent = "💀 " + message;
+        showOverlay("💀 Ты упал!", "Уровень начнётся заново.", "Ещё раз");
+        setTimeout(function () { if (gameOver) respawn(); }, 600);
     }
 
-    function restartGame() {
-        currentLevelIndex = 0;
-        coinsCollected = 0;
-        loadLevel(0);
+    if (rectsOverlap(player, currentLevel.flag)) {
+        if (currentLevelIndex < levels.length - 1) {
+            currentLevelIndex++;
+            coinsAtLevelStart = coinsCollected;
+            loadLevel(currentLevelIndex);
+        } else {
+            gameWon = true;
+            showOverlay("🎉 Игра пройдена!", "Всего монет собрано: <b>" + coinsCollected + "</b>", "Играть снова");
+        }
     }
+}
 
+/* ---------- Отрисовка ---------- */
+function drawSky() {
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, "#87ceeb");
+    g.addColorStop(1, "#cfe8f7");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+
+    // солнце
+    ctx.fillStyle = "#ffd964";
+    ctx.beginPath(); ctx.arc(560, 55, 26, 0, Math.PI * 2); ctx.fill();
+
+    // холмы
+    ctx.fillStyle = "#9fd6a3";
+    ctx.beginPath(); ctx.ellipse(120, 360, 220, 90, 0, Math.PI, 0); ctx.fill();
+    ctx.fillStyle = "#7cc47f";
+    ctx.beginPath(); ctx.ellipse(430, 370, 260, 110, 0, Math.PI, 0); ctx.fill();
+
+    // облака
+    ctx.fillStyle = "rgba(255,255,255,.85)";
+    [[80,60],[300,40],[480,90]].forEach(function (c) {
+        ctx.beginPath();
+        ctx.arc(c[0], c[1], 14, 0, Math.PI * 2);
+        ctx.arc(c[0] + 18, c[1] + 4, 11, 0, Math.PI * 2);
+        ctx.arc(c[0] - 18, c[1] + 5, 10, 0, Math.PI * 2);
+        ctx.fill();
+    });
+}
+
+function draw() {
+    drawSky();
+
+    // платформы: земля с травой
+    currentLevel.platforms.forEach(function (p) {
+        ctx.fillStyle = "#8a5a35";
+        ctx.fillRect(p.x, p.y, p.width, p.height);
+        ctx.fillStyle = "#4fae52";
+        ctx.fillRect(p.x, p.y, p.width, Math.min(6, p.height));
+    });
+
+    // шипы — треугольники
+    ctx.fillStyle = "#c0392b";
+    currentLevel.spikes.forEach(function (s) {
+        const count = Math.max(1, Math.round(s.width / 12));
+        const w = s.width / count;
+        for (let i = 0; i < count; i++) {
+            ctx.beginPath();
+            ctx.moveTo(s.x + i * w, s.y + s.height);
+            ctx.lineTo(s.x + i * w + w / 2, s.y);
+            ctx.lineTo(s.x + (i + 1) * w, s.y + s.height);
+            ctx.closePath();
+            ctx.fill();
+        }
+    });
+
+    // монеты
+    currentLevel.coins.forEach(function (c) {
+        if (c.collected) return;
+        ctx.fillStyle = "#f1c40f";
+        ctx.beginPath(); ctx.arc(c.x, c.y, c.radius, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#e2a90c";
+        ctx.beginPath(); ctx.arc(c.x, c.y, c.radius - 3, 0, Math.PI * 2); ctx.fill();
+    });
+
+    // враги
+    currentLevel.enemies.forEach(function (e) {
+        if (!e.alive) return;
+        ctx.fillStyle = "#9b59b6";
+        rr(e.x, e.y, e.width, e.height, 6);
+        ctx.fill();
+        ctx.fillStyle = "#fff";
+        ctx.beginPath(); ctx.arc(e.x + 8, e.y + 10, 3, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(e.x + 18, e.y + 10, 3, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#222";
+        ctx.beginPath(); ctx.arc(e.x + 8 + e.dir * 1.5, e.y + 10, 1.4, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(e.x + 18 + e.dir * 1.5, e.y + 10, 1.4, 0, Math.PI * 2); ctx.fill();
+    });
+
+    // флаг
+    const f = currentLevel.flag;
+    ctx.fillStyle = "#7f8c8d";
+    ctx.fillRect(f.x, f.y, 3, f.height + 14);
+    ctx.fillStyle = "#e74c3c";
+    ctx.beginPath();
+    ctx.moveTo(f.x + 3, f.y);
+    ctx.lineTo(f.x + 24, f.y + 7);
+    ctx.lineTo(f.x + 3, f.y + 14);
+    ctx.closePath();
+    ctx.fill();
+
+    // игрок
+    ctx.fillStyle = gameOver ? "#95a5a6" : "#2ecc71";
+    rr(player.x, player.y, player.width, player.height, 6);
+    ctx.fill();
+    ctx.fillStyle = "#fff";
+    const eyeY = player.y + 9;
+    const ex = playerFacing * 3;
+    ctx.beginPath(); ctx.arc(player.x + 10 + ex, eyeY, 3.4, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(player.x + 19 + ex, eyeY, 3.4, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#222";
+    ctx.beginPath(); ctx.arc(player.x + 10 + ex * 1.6, eyeY, 1.6, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(player.x + 19 + ex * 1.6, eyeY, 1.6, 0, Math.PI * 2); ctx.fill();
+}
+
+function rr(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+
+function gameLoop() {
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+
+function restartGame() {
+    currentLevelIndex = 0;
+    coinsCollected = 0;
+    coinsAtLevelStart = 0;
     loadLevel(0);
-    gameLoop();
-</script>
+    hideOverlay();
+    started = true;
+}
 
+/* ---------- Управление ---------- */
+document.addEventListener("keydown", function (e) {
+    const k = e.key.toLowerCase();
+    keys[k] = true;
+    if (k === " " || k === "arrowup") e.preventDefault();
+    if (!started && (k === " " || k === "enter")) { hideOverlay(); started = true; }
+});
+document.addEventListener("keyup", function (e) { keys[e.key.toLowerCase()] = false; });
+
+function bindPad(id, key) {
+    const el = document.getElementById(id);
+    const on = function (e) { e.preventDefault(); keys[key] = true; if (!started) { hideOverlay(); started = true; } };
+    const off = function (e) { e.preventDefault(); keys[key] = false; };
+    el.addEventListener("pointerdown", on);
+    el.addEventListener("pointerup", off);
+    el.addEventListener("pointerleave", off);
+    el.addEventListener("pointercancel", off);
+}
+bindPad("btnLeft", "arrowleft");
+bindPad("btnRight", "arrowright");
+bindPad("btnJump", " ");
+
+loadLevel(0);
+showOverlay("Платформер", "Дойди до флага 🚩<br>Собирай монеты, прыгай на врагов сверху, избегай шипов.", "Играть");
+gameLoop();
+</script>
 </body>
 </html>
